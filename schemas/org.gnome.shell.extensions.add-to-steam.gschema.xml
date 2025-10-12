@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist gettext-domain="gnome-shell-extension-add-to-steam">
+	<schema id="org.gnome.shell.extensions.add-to-steam" path="/org/gnome/shell/extensions/add-to-steam/">
+	    <key name="target-binary" type="s">
+		    <default>"/usr/bin/steamos-add-to-steam"</default>
+			<summary>Path to "steamos-add-to-steam" binary</summary>
+			<description>
+			    Path to binary for adding custom applications to steam.
+				If the default binary isn't availible on your system,
+				it can be created from https://github.com/vicrodh/steamos-add-to-steam/blob/main/bin/add-to-steam
+			</description>
+		</key>
+	</schema>
+</schemalist>
