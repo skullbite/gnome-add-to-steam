@@ -11,19 +11,17 @@ SUPPORTED_MIMES = (
     "application/x-ms-dos-executable"
 )
 
+ATS_PATH = "/usr/bin/steamos-add-to-steam"
+LOCAL_ATS_PATH = path.expanduser("~/.local/bin/steamos-add-to-steam")
+
 class AddToSteam(Nautilus.MenuProvider, GObject.GObject):
-    gsettings_call = [
-        "gsettings",
-        "get",
-        "org.gnome.shell.extensions.add-to-steam",
-        "target-binary"
-    ]
+    target_path = ""
+
     def __init__(self):
-        #if path.exists("/usr/share/gnome-shell/extensions/add-to-steam@pupper.space"):
-        #    print("installed at system level")
-        if path.exists(path.expanduser("~/.local/share/gnome-shell/extensions/add-to-steam@pupper.space")):
-            self.gsettings_call.insert(1, "--schemadir")
-            self.gsettings_call.insert(2, path.expanduser("~/.local/share/gnome-shell/extensions/add-to-steam@pupper.space/schemas"))
+        if path.exists(ATS_PATH):
+            target_path = ATS_PATH
+        elif path.exists(LOCAL_ATS_PATH):
+            target_path = LOCAL_ATS_PATH
             
     def get_file_items(self, *args):
         files = args[-1]
@@ -36,14 +34,13 @@ class AddToSteam(Nautilus.MenuProvider, GObject.GObject):
             return []
         elif not files[0].get_mime_type() in SUPPORTED_MIMES:
             return []
+        elif self.target_path == "":
+            return []
         
        
         item.connect("activate", self.run_add_to_steam, files)
         return [item]
         
     def run_add_to_steam(self, menus, files):
-        add_to_steam_path = subprocess.check_output(self.gsettings_call).decode("utf-8").replace("\n", "")
-        # if not path.exists(add_to_steam_path):
-        #    system()
-        system(f"{add_to_steam_path} \"{files[0].get_uri().replace("file://", " ")}\"")
+        system(f"{self.target_path} \"{files[0].get_uri().replace("file://", " ")}\"")
         

@@ -4,7 +4,6 @@
     "uuid": "add-to-steam@pupper.space",
     "version": 2,
     "version-name": "1.0.0",
-    "settings-schema": "org.gnome.shell.extensions.add-to-steam",
     "shell-version": [
         "48",
         "49"

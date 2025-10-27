@@ -5,12 +5,12 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 export default class AddToSteam extends Extension {
+    targetPath = "";
     constructor(metadata) {
         super(metadata);
         this._originalPopupMenu = null;
         this._addToSteamButton = null;
         this._customMenuItemFile = null;
-        this.settings = this.getSettings();
     }
 
     enable() {
@@ -54,16 +54,14 @@ export default class AddToSteam extends Extension {
                 return;
             }
             
-
-            // Open folder action
             if (!this._addToSteamButton) {
                 this._addToSteamButton = new PopupMenu.PopupMenuItem(_('Add To Steam'));
                 this._addToSteamButton.connect('activate', async () => {
                     try {
-                        Gio.Subprocess.new([this.settings.get_string("target-binary"), desktopFilePath], Gio.SubprocessFlags.NONE);
+                        Gio.Subprocess.new(["/usr/bin/steamos-add-to-steam", desktopFilePath], Gio.SubprocessFlags.NONE);
 
                     } catch (e) { 
-                        console.log("Failed to call 'add-to-steam' binary.", e);
+                        console.log("Failed to call 'steamos-add-to-steam' binary.", e);
                     }
                     
                 });
@@ -88,5 +86,9 @@ export default class AddToSteam extends Extension {
         }
 
         this.settings = null;
+    }
+
+    addToSteam() {
+        
     }
 }
