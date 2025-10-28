@@ -18,6 +18,7 @@ class AddToSteam(Nautilus.MenuProvider, GObject.GObject):
     target_path = ""
 
     def __init__(self):
+        super().__init__()
         if path.exists(ATS_PATH):
             target_path = ATS_PATH
         elif path.exists(LOCAL_ATS_PATH):
