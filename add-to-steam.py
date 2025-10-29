@@ -15,14 +15,14 @@ ATS_PATH = "/usr/bin/steamos-add-to-steam"
 LOCAL_ATS_PATH = path.expanduser("~/.local/bin/steamos-add-to-steam")
 
 class AddToSteam(Nautilus.MenuProvider, GObject.GObject):
-    target_path = ""
-
     def __init__(self):
         super().__init__()
         if path.exists(ATS_PATH):
-            target_path = ATS_PATH
+            self.target_path = ATS_PATH
         elif path.exists(LOCAL_ATS_PATH):
-            target_path = LOCAL_ATS_PATH
+            self.target_path = LOCAL_ATS_PATH
+        else:
+            self.target_path = ""
             
     def get_file_items(self, *args):
         files = args[-1]
