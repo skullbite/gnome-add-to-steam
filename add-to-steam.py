@@ -2,7 +2,8 @@ import subprocess
 from os import system, path, popen
 
 from gi.repository import GObject, Nautilus
-from urllib.parse import urlparse
+from urllib.parse import urlparse, unquote
+
 
 SUPPORTED_MIMES = (
     "application/x-executable",
@@ -16,7 +17,6 @@ LOCAL_ATS_PATH = path.expanduser("~/.local/bin/steamos-add-to-steam")
 
 class AddToSteam(Nautilus.MenuProvider, GObject.GObject):
     def __init__(self):
-        super().__init__()
         if path.exists(ATS_PATH):
             self.target_path = ATS_PATH
         elif path.exists(LOCAL_ATS_PATH):
@@ -26,10 +26,7 @@ class AddToSteam(Nautilus.MenuProvider, GObject.GObject):
             
     def get_file_items(self, *args):
         files = args[-1]
-        item = Nautilus.MenuItem(
-            name="AddToSteam::Add",
-            label="Add to Steam",
-        )
+        
 
         if len(files) != 1:
             return []
@@ -37,11 +34,14 @@ class AddToSteam(Nautilus.MenuProvider, GObject.GObject):
             return []
         elif self.target_path == "":
             return []
+
+        item = Nautilus.MenuItem(
+            name="AddToSteam::Add",
+            label="Add to Steam",
+        )
         
-       
         item.connect("activate", self.run_add_to_steam, files)
         return [item]
         
     def run_add_to_steam(self, menus, files):
-        system(f"{self.target_path} \"{files[0].get_uri().replace("file://", " ")}\"")
-        
+        popen(f"{self.target_path} \"{unquote(files[0].get_uri()).replace("file://", "").replace("%20", " ")}\" &")
