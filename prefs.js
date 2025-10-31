@@ -8,24 +8,22 @@ export default class AddToSteamPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
         // Create a preferences page, with a single group
         const page = new Adw.PreferencesPage({
-            title: _('General'),
+            title: _('Add To Steam'),
             icon_name: 'dialog-information-symbolic',
         });
         window.add(page);
 
-        const group = new Adw.PreferencesGroup({
-            description: _('If there is no \'add-to-steam\' binary on your system, one can be created from https://github.com/vicrodh/steamos-add-to-steam/blob/main/bin/add-to-steam'),
-        });
+        const group = new Adw.PreferencesGroup({});
         page.add(group);
 
         // Create a new preferences row
-        const row = new Adw.EntryRow({
-            title: _("'add-to-steam' binary location")
+        const row = new Adw.SwitchRow({
+            title: _("Use Nautilus Extension")
         });
         group.add(row);
 
         window._settings = this.getSettings();
-        window._settings.bind('target-binary', row, 'text',
+        window._settings.bind('use-nautilus', row, 'active',
             Gio.SettingsBindFlags.DEFAULT);
     }
 }

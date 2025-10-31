@@ -1,25 +1,73 @@
-import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
-import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
-import * as AppDisplay from 'resource:///org/gnome/shell/ui/appDisplay.js';
+import { Extension, InjectionManager, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
+import { AppMenu } from 'resource:///org/gnome/shell/ui/appMenu.js'
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
 export default class AddToSteam extends Extension {
-    targetPath = "";
-    constructor(metadata) {
-        super(metadata);
-        this._originalPopupMenu = null;
-        this._addToSteamButton = null;
-        this._customMenuItemFile = null;
+    async enable() {
+        this.settings = this.getSettings();
+        this.injector = new InjectionManager();
+        this.menus = [];
+
+        this.settings.connectObject(
+            "changed::use-nautilus", 
+            () => this.linkNautliusExtension(!this.settings.get_boolean("use-nautilus")), 
+            this
+        );
+
+        this.linkNautliusExtension(!this.settings.get_boolean("use-nautilus"))
+
+        let atsPath = "";
+        for (const i of ["/usr/bin/steamos-add-to-steam", "~/.local/bin/steamos-add-to-steam"]) {
+            const binaryCheck = Gio.Subprocess.new(["test", "-f", i], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
+            
+            const success = await binaryCheck.wait_check_async(null);
+            if (success) {
+                atsPath = i;
+                break;
+            }
+        }
+
+        this.injector.overrideMethod(AppMenu.prototype, "open", og => {
+            const menus = this.menus;
+
+            return function (...args) {
+                const appInfo = this._app?.app_info;
+                if (!appInfo || atsPath === "" || menus.includes(this)) 
+                    return og.call(this, ...args);
+
+                this.steamButton = this.addAction("Add To Steam", () => {
+                    try {
+                        Gio.Subprocess.new([atsPath, `${file.replace("file://", "")}`], Gio.SubprocessFlags.NONE);
+                    } catch (e) { 
+                        console.log("Failed to call 'steamos-add-to-steam' binary.", e);
+                    }
+                });
+
+                menus.push(this);
+
+                return og.call(this, ...args);
+            }
+        });
+        
     }
 
-    enable() {
-        // Save the original popupMenu function to the prototype
-        if (!this._originalPopupMenu) {
-            this._originalPopupMenu = AppDisplay.AppIcon.prototype.popupMenu;
-        }
-        const originalPopupMenu = this._originalPopupMenu;
+    disable() {
+        this.linkNautliusExtension(true);
 
+        for (const i of this.menus) {
+            i.steamButton.destroy();
+            delete i.steamButton;
+        }
+        
+        this.menus = null;
+        this.settings = null;
+        this.injector.clear();
+        this.injector = null;
+    }
+
+
+    linkNautliusExtension(unlink = false) {
         const fn = Gio.File.new_for_uri(import.meta.url);
         const ws = fn.get_parent().get_path();
         const home = GLib.get_home_dir();
@@ -31,64 +79,12 @@ export default class AddToSteam extends Extension {
         ], Gio.SubprocessFlags.NONE);
 
         Gio.Subprocess.new([
-            "ln",
-            "-s",
-            ws + "/add-to-steam.py",
+            ...(unlink ? ["rm", "-f"] : [
+                "ln",
+                "-sf",
+                ws + "/add-to-steam.py"
+            ]),
             home + "/.local/share/nautilus-python/extensions/add-to-steam.py"
         ], Gio.SubprocessFlags.NONE);
-
-
-        // Since there is not proper API to add context menu functions to the AppIcons, we'll have to patch the popupMenu function instead
-        AppDisplay.AppIcon.prototype.popupMenu = function (side = imports.gi.St.Side.LEFT) {
-            originalPopupMenu.call(this, side);
-
-            if (!this._menu) {
-                console.log('No context menu found for the app icon.');
-                return false;
-            }
-
-            const desktopInfo = this.app.get_app_info();
-            const desktopFilePath = desktopInfo?.get_filename();
-            if (!desktopFilePath) {
-                console.log('No .desktop file found for the selected app.');
-                return;
-            }
-            
-            if (!this._addToSteamButton) {
-                this._addToSteamButton = new PopupMenu.PopupMenuItem(_('Add To Steam'));
-                this._addToSteamButton.connect('activate', async () => {
-                    try {
-                        Gio.Subprocess.new(["/usr/bin/steamos-add-to-steam", desktopFilePath], Gio.SubprocessFlags.NONE);
-
-                    } catch (e) { 
-                        console.log("Failed to call 'steamos-add-to-steam' binary.", e);
-                    }
-                    
-                });
-
-                this._menu.addMenuItem(this._addToSteamButton);
-            }
-
-        };
-    }
-
-    disable() {
-        const home = GLib.get_home_dir();
-        Gio.Subprocess.new([
-            "rm",
-            home + "/.local/share/nautilus-python/extensions/add-to-steam.py"
-        ], Gio.SubprocessFlags.NONE);
-        
-        // Restore the original popupMenu method
-        if (this._originalPopupMenu) {
-            AppDisplay.AppIcon.prototype.popupMenu = this._originalPopupMenu;
-            this._originalPopupMenu = null;
-        }
-
-        this.settings = null;
-    }
-
-    addToSteam() {
-        
     }
 }
