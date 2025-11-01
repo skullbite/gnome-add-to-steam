@@ -38,7 +38,7 @@ export default class AddToSteam extends Extension {
 
                 this.steamButton = this.addAction("Add To Steam", () => {
                     try {
-                        Gio.Subprocess.new([atsPath, `${file.replace("file://", "")}`], Gio.SubprocessFlags.NONE);
+                        Gio.Subprocess.new([atsPath, `${appInfo.filename.replace("file://", "")}`], Gio.SubprocessFlags.NONE);
                     } catch (e) { 
                         console.log("Failed to call 'steamos-add-to-steam' binary.", e);
                     }
