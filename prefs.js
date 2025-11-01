@@ -6,7 +6,6 @@ import {ExtensionPreferences, gettext as _} from 'resource:///org/gnome/Shell/Ex
 
 export default class AddToSteamPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        // Create a preferences page, with a single group
         const page = new Adw.PreferencesPage({
             title: _('Add To Steam'),
             icon_name: 'dialog-information-symbolic',
