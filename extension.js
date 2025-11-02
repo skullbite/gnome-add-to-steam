@@ -5,6 +5,9 @@ import GLib from 'gi://GLib';
 
 export default class AddToSteam extends Extension {
     async enable() {
+        for (const i of ["make_directory_async", "delete_async", "make_symbolic_link_async"])
+            Gio._promisify(Gio.File.prototype, i);
+
         this.settings = this.getSettings();
         this.injector = new InjectionManager();
         this.menus = [];
@@ -19,10 +22,10 @@ export default class AddToSteam extends Extension {
 
         let atsPath = "";
         for (const i of ["/usr/bin/steamos-add-to-steam", "~/.local/bin/steamos-add-to-steam"]) {
-            const binaryCheck = Gio.Subprocess.new(["test", "-f", i], Gio.SubprocessFlags.STDOUT_PIPE | Gio.SubprocessFlags.STDERR_PIPE);
-            
-            const success = await binaryCheck.wait_check_async(null);
-            if (success) {
+            const file = Gio.File.new_for_path(i);
+
+            if (file.query_exists(null)) {
+                console.log("found a steam binary!");
                 atsPath = i;
                 break;
             }
@@ -67,24 +70,26 @@ export default class AddToSteam extends Extension {
     }
 
 
-    linkNautliusExtension(unlink = false) {
+    async linkNautliusExtension(unlink = false) {
         const fn = Gio.File.new_for_uri(import.meta.url);
         const ws = fn.get_parent().get_path();
         const home = GLib.get_home_dir();
+        const extensionFinal = `${home}/.local/share/nautilus-python/extensions`;
+        const extension = `${ws}/add-to-steam.py`;
 
-        Gio.Subprocess.new([
-            "mkdir",
-            "-p",
-            home + "/.local/share/nautilus-python/extensions"
-        ], Gio.SubprocessFlags.NONE);
+        const nautilusExtensionPath = Gio.File.new_for_path(extensionFinal);
+        const extensionPath = Gio.File.new_for_path(extensionFinal + "/add-to-steam.py");
 
-        Gio.Subprocess.new([
-            ...(unlink ? ["rm", "-f"] : [
-                "ln",
-                "-sf",
-                ws + "/add-to-steam.py"
-            ]),
-            home + "/.local/share/nautilus-python/extensions/add-to-steam.py"
-        ], Gio.SubprocessFlags.NONE);
+        if (!nautilusExtensionPath.query_exists(null))
+            await nautilusExtensionPath.make_directory_async(GLib.PRIORITY_DEFAULT, null);
+        
+        try {
+            if (unlink)
+                await extensionPath.delete_async(GLib.PRIORITY_DEFAULT, null);
+            else 
+                await extensionPath.make_symbolic_link_async(extension, GLib.PRIORITY_DEFAULT, null);
+        } catch (e) { /* only happened during debug but just to be sure */}
+
+        
     }
 }
