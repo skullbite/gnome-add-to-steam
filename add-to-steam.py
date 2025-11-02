@@ -16,7 +16,7 @@ SUPPORTED_MIMES = (
 ATS_PATH = "/usr/bin/steamos-add-to-steam"
 LOCAL_ATS_PATH = path.expanduser("~/.local/bin/steamos-add-to-steam")
 
-class AddToSteam(Nautilus.MenuProvider, GObject.GObject):     
+class AddToSteam(GObject.GObject, Nautilus.MenuProvider):     
     def get_file_items(self, *args):
         if path.exists(ATS_PATH):
             self.target_path = ATS_PATH
@@ -25,14 +25,16 @@ class AddToSteam(Nautilus.MenuProvider, GObject.GObject):
         else:
             self.target_path = ""
         files = args[-1]
-        mime = files[0].get_mime_type()
         
         if len(files) != 1:
             return []
-        elif not files[0].get_mime_type() in SUPPORTED_MIMES:
+
+        mime = files[0].get_mime_type()
+
+        if not mime in SUPPORTED_MIMES:
             return []
         elif not access(unquote(files[0].get_uri()).replace("file://", ""), X_OK) and not mime == "application/x-ms-dos-executable":
-            pass
+            return []
         elif self.target_path == "":
             return []
 
