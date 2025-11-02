@@ -25,7 +25,6 @@ export default class AddToSteam extends Extension {
             const file = Gio.File.new_for_path(i);
 
             if (file.query_exists(null)) {
-                console.log("found a steam binary!");
                 atsPath = i;
                 break;
             }
