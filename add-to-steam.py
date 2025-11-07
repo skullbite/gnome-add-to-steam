@@ -45,4 +45,5 @@ class AddToSteam(GObject.GObject, Nautilus.MenuProvider):
         return [item]
         
     def run_add_to_steam(self, menus, files):
+        # TODO: Executables with spaces appear like%20this?
         popen(f"touch /tmp/addnonsteamgamefile && steam \"steam://addnonsteamgame/{quote(files[0].get_uri().replace("file://", ""), safe='')}\"")
