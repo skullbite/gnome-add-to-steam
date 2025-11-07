@@ -3,10 +3,16 @@ import { AppMenu } from 'resource:///org/gnome/shell/ui/appMenu.js'
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
+const ADD_TO_STEAM_BASH = `
+encodedUrl="steam://addnonsteamgame/$(python3 -c "import urllib.parse;print(urllib.parse.quote('%', safe=''))")"
+steam "$encodedUrl"
+`;
+
 export default class AddToSteam extends Extension {
     async enable() {
-        for (const i of ["make_directory_async", "delete_async", "make_symbolic_link_async"])
+        for (const i of ["make_directory_async", "create_async", "delete_async", "make_symbolic_link_async"])
             Gio._promisify(Gio.File.prototype, i);
+        Gio._promisify(Gio.Subprocess.prototype, "communicate_utf8_async")
 
         this.settings = this.getSettings();
         this.injector = new InjectionManager();
@@ -20,29 +26,23 @@ export default class AddToSteam extends Extension {
 
         this.linkNautliusExtension(!this.settings.get_boolean("use-nautilus"))
 
-        let atsPath = "";
-        for (const i of ["/usr/bin/steamos-add-to-steam", "~/.local/bin/steamos-add-to-steam"]) {
-            const file = Gio.File.new_for_path(i);
-
-            if (file.query_exists(null)) {
-                atsPath = i;
-                break;
-            }
-        }
-
         this.injector.overrideMethod(AppMenu.prototype, "open", og => {
             const menus = this.menus;
 
             return function (...args) {
                 const appInfo = this._app?.app_info;
-                if (!appInfo || atsPath === "" || menus.includes(this)) 
+                if (!appInfo || menus.includes(this)) 
                     return og.call(this, ...args);
 
-                this.steamButton = this.addAction("Add To Steam", () => {
+                
+                this.steamButton = this.addAction("Add To Steam", async () => {
                     try {
-                        Gio.Subprocess.new([atsPath, `${appInfo.filename.replace("file://", "")}`], Gio.SubprocessFlags.NONE);
+                        const tempFile = Gio.File.new_for_path("/tmp/addnonsteamgamefile");
+                        tempFile.create_async(Gio.FileCreateFlags.NONE, GLib.PRIORITY_DEFAULT, null);
+                        
+                        Gio.Subprocess.new(["bash", "-c", ADD_TO_STEAM_BASH.replace("%", `${appInfo.filename}`)], Gio.SubprocessFlags.NONE);
                     } catch (e) { 
-                        console.log("Failed to call 'steamos-add-to-steam' binary.", e);
+                        console.log("Add-to-steam action failed", e);
                     }
                 });
 
@@ -73,15 +73,19 @@ export default class AddToSteam extends Extension {
         const fn = Gio.File.new_for_uri(import.meta.url);
         const ws = fn.get_parent().get_path();
         const home = GLib.get_home_dir();
-        const extensionFinal = `${home}/.local/share/nautilus-python/extensions`;
+        const extensionFinal = `${home}/.local/share/nautilus-python/`;
         const extension = `${ws}/add-to-steam.py`;
 
-        const nautilusExtensionPath = Gio.File.new_for_path(extensionFinal);
-        const extensionPath = Gio.File.new_for_path(extensionFinal + "/add-to-steam.py");
+        const nautilusPath = Gio.File.new_for_path(extensionFinal);
+        const nautilusExtensionPath = Gio.File.new_for_path(extensionFinal + "/extensions");
+        const extensionPath = Gio.File.new_for_path(extensionFinal + "/extensions/add-to-steam.py");
+
+        if (!nautilusPath.query_exists(null)) 
+            await nautilusPath.make_directory_async(GLib.PRIORITY_DEFAULT, null);
 
         if (!nautilusExtensionPath.query_exists(null))
             await nautilusExtensionPath.make_directory_async(GLib.PRIORITY_DEFAULT, null);
-        
+
         try {
             if (unlink)
                 await extensionPath.delete_async(GLib.PRIORITY_DEFAULT, null);
