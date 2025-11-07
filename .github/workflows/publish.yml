@@ -25,6 +25,5 @@ jobs:
               with:
                 tag_name: nightly
                 repository: skullbite/gnome-add-to-steam
-                token: ${{ secrets.ATS_TOKEN }}
                 files: gnome-add-to-steam@pupper.space.zip
          
