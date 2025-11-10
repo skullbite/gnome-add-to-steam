@@ -1,7 +1,7 @@
 {
     "name": "Add to Steam",
     "settings-schema": "org.gnome.shell.extensions.add-to-steam",
-    "description": "Add overview apps to the steam client without restarting; like on SteamOS.",
+    "description": "Add executables to steam without having to open, or restart steam; Just like SteamOS.",
     "uuid": "add-to-steam@pupper.space",
     "url": "https://github.com/skullbite/gnome-add-to-steam",
     "version": 2,
