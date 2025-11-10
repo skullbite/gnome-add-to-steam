@@ -12,7 +12,6 @@ export default class AddToSteam extends Extension {
     async enable() {
         for (const i of ["make_directory_async", "create_async", "delete_async", "make_symbolic_link_async"])
             Gio._promisify(Gio.File.prototype, i);
-        Gio._promisify(Gio.Subprocess.prototype, "communicate_utf8_async")
 
         this.settings = this.getSettings();
         this.injector = new InjectionManager();
